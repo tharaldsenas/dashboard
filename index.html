@@ -728,7 +728,7 @@
             <p class="snapshot-note"><strong>Kilde:</strong> «Hot_Products 01.09.2026-14.09.2026.pdf» mottatt fra Stian Waage 31. august 2026. Rater for China Main Ports, inkludert Shanghai og Ningbo, til Oslo. Sjøfraktrate uten levering.</p>
           </section>
 
-          <section class="card panel" id="copper">
+          <section class="card panel" id="copper" role="link" tabindex="0" aria-label="Åpne kilden for dagens kobberpris" style="cursor:pointer">
             <div class="panel-head">
               <div><h2 class="panel-title">Dagens kobberpris</h2><div class="panel-meta">USD per metrisk tonn</div></div>
               <span class="tag amber" id="copperStatus">Reservekilde</span>
@@ -1115,6 +1115,18 @@
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openFxSource();
+        }
+      });
+
+      const copperTile = document.getElementById("copper");
+      const openCopperSource = () => window.open("https://metalmarket.cash", "_blank", "noopener,noreferrer");
+      copperTile.addEventListener("click", event => {
+        if (!event.target.closest("button")) openCopperSource();
+      });
+      copperTile.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openCopperSource();
         }
       });
 
