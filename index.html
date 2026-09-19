@@ -598,7 +598,7 @@
           <div class="kpi-value" id="revenueValue">48,7 MNOK</div>
           <div class="kpi-foot"><span class="delta positive">+12,4 %</span> mot samme periode i fjor · demotall</div>
         </article>
-        <article class="card kpi" id="ordersKpi" style="--accent: var(--amber)">
+        <article class="card kpi" id="ordersKpi" role="link" tabindex="0" aria-label="Åpne månedsrapporten i Excel" style="--accent: var(--amber);cursor:pointer">
           <div class="kpi-label"><span>Ordrereserve</span><span class="kpi-icon">≡</span></div>
           <div class="kpi-value" id="orderValue">21,83 MNOK</div>
           <div class="kpi-foot">Dekker <span class="delta positive">3,7 måneder</span> fremover · <span id="orderReserveUpdated">venter på oppdatering</span></div>
@@ -1141,6 +1141,17 @@
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openCopperSource();
+        }
+      });
+
+      const orderReserveTile = document.getElementById("ordersKpi");
+      const orderReserveFile = "ms-excel:ofe|u|file:///C:/Users/Administrator/OneDrive%20-%20Tharaldsen%20AS/Microsoft%20Copilot%20Chat-filer/M%C3%A5nedsrapport%20Tharaldsen%20AS%20150926.xlsx";
+      const openOrderReserveFile = () => { window.location.href = orderReserveFile; };
+      orderReserveTile.addEventListener("click", openOrderReserveFile);
+      orderReserveTile.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openOrderReserveFile();
         }
       });
 
