@@ -600,8 +600,8 @@
         </article>
         <article class="card kpi" id="ordersKpi" style="--accent: var(--amber)">
           <div class="kpi-label"><span>Ordrereserve</span><span class="kpi-icon">≡</span></div>
-          <div class="kpi-value" id="orderValue">21,6 MNOK</div>
-          <div class="kpi-foot">Dekker <span class="delta positive">3,7 måneder</span> fremover</div>
+          <div class="kpi-value" id="orderValue">21,83 MNOK</div>
+          <div class="kpi-foot">Dekker <span class="delta positive">3,7 måneder</span> fremover · <span id="orderReserveUpdated">venter på oppdatering</span></div>
         </article>
         <article class="card kpi" id="operatingResultKpi" style="--accent: var(--cyan)">
           <div class="kpi-label"><span>Driftsresultat hittil i år</span><span class="kpi-icon">±</span></div>
@@ -1192,6 +1192,25 @@
 
       document.getElementById("copperRefresh").addEventListener("click", loadCopperPrice);
       window.setInterval(loadCopperPrice, 300000);
+
+      async function loadOrderReserve() {
+        try {
+          const response = await fetch("order-reserve.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          const value = Number(payload.value);
+          if (!Number.isFinite(value)) throw new Error("Ugyldig ordrereserveverdi");
+          document.getElementById("orderValue").textContent = `${(value / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK`;
+          const updatedAt = payload.updatedAt ? new Date(payload.updatedAt) : null;
+          document.getElementById("orderReserveUpdated").textContent = updatedAt && !Number.isNaN(updatedAt.getTime())
+            ? `oppdatert ${updatedAt.toLocaleString("nb-NO", { dateStyle: "short", timeStyle: "short" })}`
+            : "oppdatert fra Excel";
+        } catch (error) {
+          console.warn("Kunne ikke lese ordrereserve fra Excel-synkroniseringen.", error);
+        }
+      }
+      loadOrderReserve();
+      window.setInterval(loadOrderReserve, 300000);
 
       document.getElementById("periodFilter").addEventListener("change", event => {
         drawRevenue(event.target.value);
