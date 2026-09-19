@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Bedriftsdashboard - demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #eef2f6;
@@ -78,25 +81,25 @@
       overflow: auto;
     }
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: block;
       padding-inline: 8px;
       margin-block-end: 30px;
-    }
-    .brand-mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
+      color: #fff;
+      font-family: "Manrope", sans-serif;
       font-weight: 800;
-      color: #0b2946;
-      background: linear-gradient(135deg, #64dae2, #fff);
-      box-shadow: 0 8px 20px rgba(0,0,0,.18);
+      font-size: 1.28rem;
+      letter-spacing: .03em;
+      line-height: 1.1;
     }
-    .brand strong { display: block; letter-spacing: .02em; }
-    .brand small { color: #b8d4e8; }
+    .brand span {
+      display: block;
+      margin-top: -4px;
+      font-family: "DM Sans", sans-serif;
+      font-size: .61rem;
+      text-transform: uppercase;
+      letter-spacing: .22em;
+      color: #cbd5df;
+    }
     .nav-label {
       margin: 20px 10px 8px;
       color: #87adc9;
@@ -517,7 +520,7 @@
     @media (max-width: 1080px) {
       .shell { grid-template-columns: 78px minmax(0,1fr); }
       .sidebar { padding-inline: 12px; }
-      .brand div:last-child, .nav button span:last-child, .nav-label, .demo-note { display: none; }
+      .nav button span:last-child, .nav-label, .demo-note { display: none; }
       .brand { padding-inline: 7px; }
       .nav button { justify-content: center; padding-inline: 7px; }
       .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -543,10 +546,7 @@
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">ET</div>
-        <div><strong>Tharaldsen AS</strong><small>Ledelsesdashboard</small></div>
-      </div>
+      <a class="brand" href="#">THARALDSEN<span>Norway · Europe · Asia</span></a>
       <div class="nav-label">Hovedsider</div>
       <nav class="nav">
         <button class="active" data-page="economy"><span class="nav-icon">kr</span><span>Økonomi</span></button>
