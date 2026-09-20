@@ -3,6 +3,8 @@ $sourceFolder = "C:\Users\Administrator\OneDrive - Tharaldsen AS\Microsoft Copil
 $outputPath = Join-Path $PSScriptRoot "order-reserve.json"
 $operatingResultOutputPath = Join-Path $PSScriptRoot "operating-result.json"
 $revenueOutputPath = Join-Path $PSScriptRoot "revenue-summary.json"
+$revenueHistoryOutputPath = Join-Path $PSScriptRoot "revenue-history.json"
+$operatingResultHistoryOutputPath = Join-Path $PSScriptRoot "operating-result-history.json"
 $excel = $null
 $workbook = $null
 
@@ -87,6 +89,66 @@ try {
     updatedAt = (Get-Date).ToUniversalTime().ToString("o")
   }
   $revenuePayload | ConvertTo-Json | Set-Content -LiteralPath $revenueOutputPath -Encoding UTF8
+
+  $monthLabels = @()
+  $revenueValues2026 = @()
+  $revenueValues2025 = @()
+  $revenueValues2024 = @()
+  foreach ($column in 3..14) {
+    $monthLabels += ([string]$sheet.Cells.Item(10, $column).Text).Trim()
+    foreach ($row in @(11, 20, 29)) {
+      $cellText = ([string]$sheet.Cells.Item($row, $column).Text).Trim()
+      $cellValue = $sheet.Cells.Item($row, $column).Value2
+      $parsedValue = 0
+      $value = $null
+      if ($cellText -ne "-" -and $null -ne $cellValue -and [double]::TryParse([string]$cellValue, [ref]$parsedValue)) {
+        $value = [double]$cellValue
+      }
+      if ($row -eq 11) { $revenueValues2026 += $value }
+      elseif ($row -eq 20) { $revenueValues2025 += $value }
+      else { $revenueValues2024 += $value }
+    }
+  }
+  $revenueHistoryPayload = [ordered]@{
+    months = $monthLabels
+    series = @(
+      [ordered]@{ year = 2026; values = $revenueValues2026 }
+      [ordered]@{ year = 2025; values = $revenueValues2025 }
+      [ordered]@{ year = 2024; values = $revenueValues2024 }
+    )
+    source = "MonthlyReport!C11:N11, C20:N20 og C29:N29"
+    updatedAt = (Get-Date).ToUniversalTime().ToString("o")
+  }
+  $revenueHistoryPayload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $revenueHistoryOutputPath -Encoding UTF8
+
+  $resultValues2026 = @()
+  $resultValues2025 = @()
+  $resultValues2024 = @()
+  foreach ($column in 3..14) {
+    foreach ($row in @(17, 26, 34)) {
+      $cellText = ([string]$sheet.Cells.Item($row, $column).Text).Trim()
+      $cellValue = $sheet.Cells.Item($row, $column).Value2
+      $parsedValue = 0
+      $value = $null
+      if ($cellText -ne "-" -and $null -ne $cellValue -and [double]::TryParse([string]$cellValue, [ref]$parsedValue)) {
+        $value = [double]$cellValue
+      }
+      if ($row -eq 17) { $resultValues2026 += $value }
+      elseif ($row -eq 26) { $resultValues2025 += $value }
+      else { $resultValues2024 += $value }
+    }
+  }
+  $operatingResultHistoryPayload = [ordered]@{
+    months = $monthLabels
+    series = @(
+      [ordered]@{ year = 2026; values = $resultValues2026 }
+      [ordered]@{ year = 2025; values = $resultValues2025 }
+      [ordered]@{ year = 2024; values = $resultValues2024 }
+    )
+    source = "MonthlyReport!C17:N17, C26:N26 og C34:N34"
+    updatedAt = (Get-Date).ToUniversalTime().ToString("o")
+  }
+  $operatingResultHistoryPayload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $operatingResultHistoryOutputPath -Encoding UTF8
 }
 finally {
   if ($workbook) {

@@ -498,6 +498,21 @@
     .drawer-head { display: flex; justify-content: space-between; align-items: center; margin-block-end: 20px; }
     .drawer h2 { margin: 0; font-size: 22px; }
     .close-btn { border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; color: var(--text); background: var(--surface-2); }
+    .history-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-block-end: 16px; color: var(--muted); font-size: 12px; }
+    .history-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .history-legend i { width: 11px; height: 11px; border-radius: 3px; background: var(--brand-2); }
+    .history-legend .year-2025 i { background: var(--cyan); }
+    .history-legend .year-2024 i { background: var(--amber); }
+    .history-scroll { overflow-x: auto; padding-block-end: 8px; }
+    .history-chart { display: grid; grid-template-columns: repeat(12, minmax(48px, 1fr)); align-items: end; gap: 10px; min-width: 720px; height: 290px; padding: 20px 8px 0; border-block-end: 1px solid var(--line); }
+    .history-month { display: grid; grid-template-rows: 1fr auto; gap: 8px; height: 100%; min-width: 0; }
+    .history-bars { display: flex; align-items: end; justify-content: center; gap: 3px; min-height: 0; }
+    .history-bar { width: 9px; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--brand-2); }
+    .history-bar.year-2025 { background: var(--cyan); }
+    .history-bar.year-2024 { background: var(--amber); }
+    .history-bar.negative { background: var(--red); }
+    .history-label { color: var(--muted); font-size: 10px; text-align: center; }
+    .history-note { margin-block-start: 14px; color: var(--muted); font-size: 11px; }
 
     .toast {
       position: fixed;
@@ -603,7 +618,7 @@
           <div class="kpi-value" id="orderValue">21,83 MNOK</div>
           <div class="kpi-foot">Dekker <span class="delta positive">3,7 måneder</span> fremover · <span id="orderReserveUpdated">venter på oppdatering</span></div>
         </article>
-        <article class="card kpi" id="operatingResultKpi" style="--accent: var(--cyan)">
+        <article class="card kpi" id="operatingResultKpi" role="link" tabindex="0" aria-label="Vis driftsresultat per måned" style="--accent: var(--cyan);cursor:pointer">
           <div class="kpi-label"><span>Driftsresultat hittil i år</span><span class="kpi-icon">±</span></div>
           <div class="kpi-value" id="operatingResultValue">– MNOK</div>
           <div class="kpi-foot"><span id="operatingResultChange">Venter på månedsrapporten</span></div>
@@ -1093,11 +1108,28 @@
         window.setTimeout(() => toast.classList.remove("show"), 2200);
       }
 
-      function openDrawer(type) {
+      function openDrawer(type, payload = null) {
         const title = document.getElementById("drawerTitle");
         const content = document.getElementById("drawerContent");
         const backdrop = document.getElementById("drawerBackdrop");
-        if (type === "orders") {
+        if (type === "revenue-history" || type === "operating-result-history") {
+          title.textContent = type === "revenue-history" ? "Omsetning per måned" : "Driftsresultat per måned";
+          const maxValue = Math.max(...payload.series.flatMap(item => item.values.map(value => Number(value) || 0)), 1);
+          const bars = payload.months.map((month, index) => `
+            <div class="history-month">
+              <div class="history-bars">
+                ${payload.series.map(item => {
+                  const rawValue = item.values[index];
+                  const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
+                  const height = Number.isFinite(value) && value !== 0 ? Math.max(2, (Math.abs(value) / maxValue) * 100) : 0;
+                  const formatted = Number.isFinite(value) ? `${(value / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK` : "Ingen tall";
+                  return `<div class="history-bar year-${item.year}${value < 0 ? " negative" : ""}" style="height:${height}%" title="${item.year}: ${formatted}"></div>`;
+                }).join("")}
+              </div>
+              <div class="history-label">${escapeHtml(month)}</div>
+            </div>`).join("");
+          content.innerHTML = `<div class="history-legend"><span><i></i>2026</span><span class="year-2025"><i></i>2025</span><span class="year-2024"><i></i>2024</span></div><div class="history-scroll"><div class="history-chart">${bars}</div></div><p class="history-note">Søylenes høyde viser månedlig omsetning i MNOK. Hold pekeren over en søyle for eksakt verdi.</p>`;
+        } else if (type === "orders") {
           title.textContent = "Ordrereserve - detaljer";
           content.innerHTML = `<div class="simple-list">${data.orders.map((item, i) => `<div class="shipment"><div class="list-row"><div><strong>${escapeHtml(item.name)}</strong><p>${8+i*3} åpne salgsordrer</p></div><span class="tag blue">${item.value.toFixed(1).replace(".", ",")} MNOK</span></div></div>`).join("")}</div>`;
         } else if (type === "production-projects") {
@@ -1156,12 +1188,40 @@
       });
 
       const revenueTile = document.getElementById("revenueKpi");
-      const openRevenueFile = () => { window.location.href = orderReserveFile; };
-      revenueTile.addEventListener("click", openRevenueFile);
+      const openRevenueDrilldown = async () => {
+        try {
+          const response = await fetch("revenue-history.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          openDrawer("revenue-history", await response.json());
+        } catch (error) {
+          showToast("Kunne ikke hente omsetningshistorikken.");
+          console.warn("Kunne ikke lese omsetningshistorikken.", error);
+        }
+      };
+      revenueTile.addEventListener("click", openRevenueDrilldown);
       revenueTile.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          openRevenueFile();
+          openRevenueDrilldown();
+        }
+      });
+
+      const operatingResultTile = document.getElementById("operatingResultKpi");
+      const openOperatingResultDrilldown = async () => {
+        try {
+          const response = await fetch("operating-result-history.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          openDrawer("operating-result-history", await response.json());
+        } catch (error) {
+          showToast("Kunne ikke hente resultathistorikken.");
+          console.warn("Kunne ikke lese resultathistorikken.", error);
+        }
+      };
+      operatingResultTile.addEventListener("click", openOperatingResultDrilldown);
+      operatingResultTile.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openOperatingResultDrilldown();
         }
       });
 
