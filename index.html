@@ -1117,8 +1117,8 @@
         const title = document.getElementById("drawerTitle");
         const content = document.getElementById("drawerContent");
         const backdrop = document.getElementById("drawerBackdrop");
-        if (type === "revenue-history" || type === "operating-result-history") {
-          title.textContent = type === "revenue-history" ? "Omsetning per måned" : "Driftsresultat per måned";
+        if (type === "revenue-history" || type === "operating-result-history" || type === "order-reserve-history") {
+          title.textContent = type === "revenue-history" ? "Omsetning per måned" : type === "operating-result-history" ? "Driftsresultat per måned" : "Ordrereserve per oppdatering";
           const maxValue = Math.max(...payload.series.flatMap(item => item.values.map(value => Number(value) || 0)), 1);
           const bars = payload.months.map((month, index) => `
             <div class="history-month">
@@ -1135,7 +1135,9 @@
             </div>`).join("");
           const formatHistoryValue = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? "–" : `${(Number(value) / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK`;
           const tableRows = payload.months.map((month, index) => `<tr><td><strong>${escapeHtml(month)}</strong></td>${payload.series.map(item => `<td>${formatHistoryValue(item.values[index])}</td>`).join("")}</tr>`).join("");
-          content.innerHTML = `<div class="history-legend"><span><i></i>2026</span><span class="year-2025"><i></i>2025</span><span class="year-2024"><i></i>2024</span></div><div class="history-scroll"><div class="history-chart">${bars}</div></div><table class="history-table"><thead><tr><th>Måned</th>${payload.series.map(item => `<th>${item.year}</th>`).join("")}</tr></thead><tbody>${tableRows}</tbody></table><p class="history-note">Søylenes høyde viser månedlig verdi i MNOK. Hold pekeren over en søyle for eksakt verdi.</p>`;
+          const legend = payload.series.map((item, index) => `<span class="${index === 1 ? "year-2025" : index === 2 ? "year-2024" : ""}"><i></i>${escapeHtml(item.year)}</span>`).join("");
+          const unitLabel = "MNOK";
+          content.innerHTML = `<div class="history-legend">${legend}</div><div class="history-scroll"><div class="history-chart">${bars}</div></div><table class="history-table"><thead><tr><th>${type === "order-reserve-history" ? "Oppdatert" : "Måned"}</th>${payload.series.map(item => `<th>${escapeHtml(item.year)}</th>`).join("")}</tr></thead><tbody>${tableRows}</tbody></table><p class="history-note">Søylenes høyde viser verdien i ${unitLabel}. Hold pekeren over en søyle for eksakt verdi.</p>`;
         } else if (type === "orders") {
           title.textContent = "Ordrereserve - detaljer";
           content.innerHTML = `<div class="simple-list">${data.orders.map((item, i) => `<div class="shipment"><div class="list-row"><div><strong>${escapeHtml(item.name)}</strong><p>${8+i*3} åpne salgsordrer</p></div><span class="tag blue">${item.value.toFixed(1).replace(".", ",")} MNOK</span></div></div>`).join("")}</div>`;
@@ -1184,13 +1186,21 @@
       });
 
       const orderReserveTile = document.getElementById("ordersKpi");
-      const orderReserveFile = "ms-excel:ofe|u|file:///C:/Users/Administrator/OneDrive%20-%20Tharaldsen%20AS/Microsoft%20Copilot%20Chat-filer/M%C3%A5nedsrapport%20Tharaldsen%20AS%20150926.xlsx";
-      const openOrderReserveFile = () => { window.location.href = orderReserveFile; };
-      orderReserveTile.addEventListener("click", openOrderReserveFile);
+      const openOrderReserveDrilldown = async () => {
+        try {
+          const response = await fetch("order-reserve-history.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          openDrawer("order-reserve-history", await response.json());
+        } catch (error) {
+          showToast("Kunne ikke hente ordrereservehistorikken.");
+          console.warn("Kunne ikke lese ordrereservehistorikken.", error);
+        }
+      };
+      orderReserveTile.addEventListener("click", openOrderReserveDrilldown);
       orderReserveTile.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          openOrderReserveFile();
+          openOrderReserveDrilldown();
         }
       });
 

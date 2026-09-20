@@ -5,6 +5,7 @@ $operatingResultOutputPath = Join-Path $PSScriptRoot "operating-result.json"
 $revenueOutputPath = Join-Path $PSScriptRoot "revenue-summary.json"
 $revenueHistoryOutputPath = Join-Path $PSScriptRoot "revenue-history.json"
 $operatingResultHistoryOutputPath = Join-Path $PSScriptRoot "operating-result-history.json"
+$orderReserveHistoryOutputPath = Join-Path $PSScriptRoot "order-reserve-history.json"
 $excel = $null
 $workbook = $null
 
@@ -29,6 +30,31 @@ try {
     updatedAt = (Get-Date).ToUniversalTime().ToString("o")
   }
   $payload | ConvertTo-Json | Set-Content -LiteralPath $outputPath -Encoding UTF8
+
+  $orderReserveHistory = @()
+  for ($row = 43; $row -le 103; $row++) {
+    $dateLabel = ([string]$sheet.Cells.Item($row, 12).Text).Trim()
+    if (-not $dateLabel) {
+      if ($orderReserveHistory.Count -gt 0) { break }
+      continue
+    }
+    $reserveValue = $sheet.Cells.Item($row, 15).Value2
+    $parsedReserveValue = 0
+    if ($null -ne $reserveValue -and [double]::TryParse([string]$reserveValue, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsedReserveValue)) {
+      $orderReserveHistory += [ordered]@{
+        label = $dateLabel -replace '^Oppdatert\s+', ''
+        value = [double]$reserveValue
+      }
+    }
+  }
+  if ($orderReserveHistory.Count -eq 0) { throw "Fant ingen ordrereservehistorikk fra rad 43." }
+  $orderReserveHistoryPayload = [ordered]@{
+    series = @([ordered]@{ year = "Totalt NOK"; values = @($orderReserveHistory | ForEach-Object { $_.value }) })
+    months = @($orderReserveHistory | ForEach-Object { $_.label })
+    source = "MonthlyReport!L43:L103 og O43:O103"
+    updatedAt = (Get-Date).ToUniversalTime().ToString("o")
+  }
+  $orderReserveHistoryPayload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $orderReserveHistoryOutputPath -Encoding UTF8
 
   $latestMonthColumn = 0
   $parsedMonthValue = 0
