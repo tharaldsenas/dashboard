@@ -507,10 +507,12 @@
     .history-chart { display: grid; grid-template-columns: repeat(12, minmax(48px, 1fr)); align-items: end; gap: 10px; min-width: 720px; height: 290px; padding: 20px 8px 0; border-block-end: 1px solid var(--line); }
     .history-month { display: grid; grid-template-rows: 1fr auto; gap: 8px; height: 100%; min-width: 0; }
     .history-bars { display: flex; align-items: end; justify-content: center; gap: 3px; min-height: 0; }
-    .history-bar { width: 9px; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--brand-2); }
+    .history-bar { position: relative; width: 9px; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--brand-2); }
     .history-bar.year-2025 { background: var(--cyan); }
     .history-bar.year-2024 { background: var(--amber); }
     .history-bar.negative { background: var(--red); }
+    .history-bar:hover { z-index: 2; }
+    .history-bar:hover::after { content: attr(data-value); position: absolute; inset-block-end: calc(100% + 6px); inset-inline-start: 50%; width: max-content; padding: 5px 7px; border-radius: 6px; color: #fff; background: #172033; font-size: 10px; line-height: 1.2; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
     .history-label { color: var(--muted); font-size: 10px; text-align: center; }
     .history-note { margin-block-start: 14px; color: var(--muted); font-size: 11px; }
 
@@ -1123,7 +1125,7 @@
                   const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
                   const height = Number.isFinite(value) && value !== 0 ? Math.max(2, (Math.abs(value) / maxValue) * 100) : 0;
                   const formatted = Number.isFinite(value) ? `${(value / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK` : "Ingen tall";
-                  return `<div class="history-bar year-${item.year}${value < 0 ? " negative" : ""}" style="height:${height}%" title="${item.year}: ${formatted}"></div>`;
+                  return `<div class="history-bar year-${item.year}${value < 0 ? " negative" : ""}" style="height:${height}%" data-value="${item.year}: ${formatted}" title="${item.year}: ${formatted}"></div>`;
                 }).join("")}
               </div>
               <div class="history-label">${escapeHtml(month)}</div>
