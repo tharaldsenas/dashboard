@@ -606,7 +606,7 @@
         <article class="card kpi" id="operatingResultKpi" style="--accent: var(--cyan)">
           <div class="kpi-label"><span>Driftsresultat hittil i år</span><span class="kpi-icon">±</span></div>
           <div class="kpi-value" id="operatingResultValue">– MNOK</div>
-          <div class="kpi-foot"><span id="operatingResultChange">Venter på Business Central</span> · mot samme periode i fjor</div>
+          <div class="kpi-foot"><span id="operatingResultChange">Venter på månedsrapporten</span></div>
         </article>
       </section>
 
@@ -1222,6 +1222,27 @@
       }
       loadOrderReserve();
       window.setInterval(loadOrderReserve, 300000);
+
+      async function loadOperatingResult() {
+        try {
+          const response = await fetch("operating-result.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          const current = Number(payload.current);
+          const previous = Number(payload.previous);
+          if (!Number.isFinite(current) || !Number.isFinite(previous)) throw new Error("Ugyldige resultatverdier");
+          const formatMnok = value => `${(value / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK`;
+          const change = previous === 0 ? null : ((current / previous) - 1) * 100;
+          const changeText = change === null ? "ingen sammenligningsverdi" : `${change >= 0 ? "+" : ""}${change.toFixed(1).replace(".", ",")} %`;
+          const changeClass = change === null ? "" : change >= 0 ? "positive" : "negative";
+          document.getElementById("operatingResultValue").textContent = formatMnok(current);
+          document.getElementById("operatingResultChange").innerHTML = `<span class="delta ${changeClass}">${changeText}</span> mot ${formatMnok(previous)} ${payload.period || "i fjor"}`;
+        } catch (error) {
+          console.warn("Kunne ikke lese driftsresultatet fra månedsrapporten.", error);
+        }
+      }
+      loadOperatingResult();
+      window.setInterval(loadOperatingResult, 300000);
 
       document.getElementById("periodFilter").addEventListener("change", event => {
         drawRevenue(event.target.value);
