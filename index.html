@@ -593,10 +593,10 @@
           <div class="kpi-value" id="liquidityValue">8,42 MNOK</div>
           <div class="kpi-foot"><span class="delta positive">+1,18 MNOK</span> siden månedsskiftet</div>
         </article>
-        <article class="card kpi" id="revenueKpi" style="--accent: var(--brand-2)">
+        <article class="card kpi" id="revenueKpi" role="link" tabindex="0" aria-label="Åpne månedsrapporten i Excel" style="--accent: var(--brand-2);cursor:pointer">
           <div class="kpi-label"><span>Omsetning hittil i år</span><span class="kpi-icon">↗</span></div>
-          <div class="kpi-value" id="revenueValue">48,7 MNOK</div>
-          <div class="kpi-foot"><span class="delta positive">+12,4 %</span> mot samme periode i fjor · demotall</div>
+          <div class="kpi-value" id="revenueValue">– MNOK</div>
+          <div class="kpi-foot"><span id="revenueChange">Venter på månedsrapporten</span></div>
         </article>
         <article class="card kpi" id="ordersKpi" role="link" tabindex="0" aria-label="Åpne månedsrapporten i Excel" style="--accent: var(--amber);cursor:pointer">
           <div class="kpi-label"><span>Ordrereserve</span><span class="kpi-icon">≡</span></div>
@@ -1155,6 +1155,16 @@
         }
       });
 
+      const revenueTile = document.getElementById("revenueKpi");
+      const openRevenueFile = () => { window.location.href = orderReserveFile; };
+      revenueTile.addEventListener("click", openRevenueFile);
+      revenueTile.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openRevenueFile();
+        }
+      });
+
       const dashboardPages = {
         economy: {
           title: "ØKONOMI",
@@ -1243,6 +1253,27 @@
       }
       loadOperatingResult();
       window.setInterval(loadOperatingResult, 300000);
+
+      async function loadRevenueSummary() {
+        try {
+          const response = await fetch("revenue-summary.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          const current = Number(payload.current);
+          const previous = Number(payload.previous);
+          if (!Number.isFinite(current) || !Number.isFinite(previous)) throw new Error("Ugyldige omsetningsverdier");
+          const formatMnok = value => `${(value / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK`;
+          const change = previous === 0 ? null : ((current / previous) - 1) * 100;
+          const changeText = change === null ? "ingen sammenligningsverdi" : `${change >= 0 ? "+" : ""}${change.toFixed(1).replace(".", ",")} %`;
+          const changeClass = change === null ? "" : change >= 0 ? "positive" : "negative";
+          document.getElementById("revenueValue").textContent = formatMnok(current);
+          document.getElementById("revenueChange").innerHTML = `<span class="delta ${changeClass}">${changeText}</span> mot ${formatMnok(previous)} ${payload.period || "i fjor"}`;
+        } catch (error) {
+          console.warn("Kunne ikke lese omsetningen fra månedsrapporten.", error);
+        }
+      }
+      loadRevenueSummary();
+      window.setInterval(loadRevenueSummary, 300000);
 
       document.getElementById("periodFilter").addEventListener("change", event => {
         drawRevenue(event.target.value);

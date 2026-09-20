@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 $sourceFolder = "C:\Users\Administrator\OneDrive - Tharaldsen AS\Microsoft Copilot Chat-filer"
 $outputPath = Join-Path $PSScriptRoot "order-reserve.json"
 $operatingResultOutputPath = Join-Path $PSScriptRoot "operating-result.json"
+$revenueOutputPath = Join-Path $PSScriptRoot "revenue-summary.json"
 $excel = $null
 $workbook = $null
 
@@ -57,6 +58,35 @@ try {
     updatedAt = (Get-Date).ToUniversalTime().ToString("o")
   }
   $operatingResultPayload | ConvertTo-Json | Set-Content -LiteralPath $operatingResultOutputPath -Encoding UTF8
+
+  $latestRevenueMonthColumn = 0
+  $parsedRevenueMonthValue = 0
+  foreach ($column in 3..14) {
+    $monthValue = $sheet.Cells.Item(11, $column).Value2
+    $monthText = ([string]$sheet.Cells.Item(11, $column).Text).Trim()
+    if ($monthText -ne "-" -and $null -ne $monthValue -and [double]::TryParse([string]$monthValue, [ref]$parsedRevenueMonthValue)) {
+      $latestRevenueMonthColumn = $column
+    }
+  }
+  if ($latestRevenueMonthColumn -eq 0) { throw "Fant ingen siste måned i omsetningsraden." }
+
+  $revenue = [double]$sheet.Range("O11").Value2
+  $previousRevenue = 0
+  foreach ($column in 3..$latestRevenueMonthColumn) {
+    $previousMonthValue = $sheet.Cells.Item(20, $column).Value2
+    if ($null -ne $previousMonthValue -and [string]$previousMonthValue -ne "") {
+      $previousRevenue += [double]$previousMonthValue
+    }
+  }
+  $revenueMonthName = [string]$sheet.Cells.Item(10, $latestRevenueMonthColumn).Text
+  $revenuePayload = [ordered]@{
+    current = $revenue
+    previous = $previousRevenue
+    period = "til og med $revenueMonthName"
+    source = "MonthlyReport!O11 og C20:$([char](64 + $latestRevenueMonthColumn))20"
+    updatedAt = (Get-Date).ToUniversalTime().ToString("o")
+  }
+  $revenuePayload | ConvertTo-Json | Set-Content -LiteralPath $revenueOutputPath -Encoding UTF8
 }
 finally {
   if ($workbook) {
