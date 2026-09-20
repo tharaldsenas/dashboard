@@ -515,6 +515,9 @@
     .history-bar:hover::after { content: attr(data-value); position: absolute; inset-block-end: calc(100% + 6px); inset-inline-start: 50%; width: max-content; padding: 5px 7px; border-radius: 6px; color: #fff; background: #172033; font-size: 10px; line-height: 1.2; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
     .history-label { color: var(--muted); font-size: 10px; text-align: center; }
     .history-note { margin-block-start: 14px; color: var(--muted); font-size: 11px; }
+    .history-table { width: 100%; min-width: 0; margin-block-start: 18px; }
+    .history-table th, .history-table td { padding: 8px 7px; font-size: 11px; }
+    .history-table th:not(:first-child), .history-table td:not(:first-child) { text-align: end; }
 
     .toast {
       position: fixed;
@@ -1130,7 +1133,9 @@
               </div>
               <div class="history-label">${escapeHtml(month)}</div>
             </div>`).join("");
-          content.innerHTML = `<div class="history-legend"><span><i></i>2026</span><span class="year-2025"><i></i>2025</span><span class="year-2024"><i></i>2024</span></div><div class="history-scroll"><div class="history-chart">${bars}</div></div><p class="history-note">Søylenes høyde viser månedlig omsetning i MNOK. Hold pekeren over en søyle for eksakt verdi.</p>`;
+          const formatHistoryValue = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? "–" : `${(Number(value) / 1000000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MNOK`;
+          const tableRows = payload.months.map((month, index) => `<tr><td><strong>${escapeHtml(month)}</strong></td>${payload.series.map(item => `<td>${formatHistoryValue(item.values[index])}</td>`).join("")}</tr>`).join("");
+          content.innerHTML = `<div class="history-legend"><span><i></i>2026</span><span class="year-2025"><i></i>2025</span><span class="year-2024"><i></i>2024</span></div><div class="history-scroll"><div class="history-chart">${bars}</div></div><table class="history-table"><thead><tr><th>Måned</th>${payload.series.map(item => `<th>${item.year}</th>`).join("")}</tr></thead><tbody>${tableRows}</tbody></table><p class="history-note">Søylenes høyde viser månedlig verdi i MNOK. Hold pekeren over en søyle for eksakt verdi.</p>`;
         } else if (type === "orders") {
           title.textContent = "Ordrereserve - detaljer";
           content.innerHTML = `<div class="simple-list">${data.orders.map((item, i) => `<div class="shipment"><div class="list-row"><div><strong>${escapeHtml(item.name)}</strong><p>${8+i*3} åpne salgsordrer</p></div><span class="tag blue">${item.value.toFixed(1).replace(".", ",")} MNOK</span></div></div>`).join("")}</div>`;
